@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -163,7 +164,9 @@ func main() {
 		cfg.StaticFolder = staticFolder
 	}
 
-	log.Infof("Starting guide mode with this token:\n\n  %s\n\n", tkn)
+	if guide {
+		log.Infof("Starting guide mode with this token:\n\n  %s\n\n", cfg.Token)
+	}
 
 	if cfg.Title == "" {
 		log.Info("No title specified. Using the name of the containing folder instead.")
@@ -173,9 +176,17 @@ func main() {
 		}
 	}
 
+	srv := http.Server{
+		ReadTimeout:  time.Second * 2,
+		WriteTimeout: time.Second * 2,
+	}
+	srv.Addr = addr
+	mux := http.NewServeMux()
+	srv.Handler = mux
+
 	localStylesheet, ok := isLocalStylesheet(cfg.Stylesheet)
 	if ok {
-		http.HandleFunc(stylesheetMountPoint, func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc(stylesheetMountPoint, func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, localStylesheet)
 		})
 		cfg.FinalStylesheet = stylesheetMountPoint
@@ -187,17 +198,17 @@ func main() {
 
 	if guide {
 		hub := commandchain.Hub{Log: log}
-		http.HandleFunc("/guide/login", guideLoginHandler(cfg, log))
-		http.HandleFunc("/guide", token.Require(cfg.Token, "/guide/login", guideHandler(cfg, tmpl, log)))
-		http.HandleFunc("/ws/guide", guideWebsocketHandler(cfg, &hub, log))
-		http.HandleFunc("/ws/guided", guidedWebsocketHandler(cfg, &hub, log))
+		mux.HandleFunc("/guide/login", guideLoginHandler(cfg, log))
+		mux.HandleFunc("/guide", token.Require(cfg.Token, "/guide/login", guideHandler(cfg, tmpl, log)))
+		mux.HandleFunc("/ws/guide", guideWebsocketHandler(cfg, &hub, log))
+		mux.HandleFunc("/ws/guided", guidedWebsocketHandler(cfg, &hub, log))
 	}
 
 	if cfg.StaticFolder != "" {
-		http.Handle("/static", http.FileServer(http.Dir(cfg.StaticFolder)))
+		mux.Handle("/static", http.FileServer(http.Dir(cfg.StaticFolder)))
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		data, err := ioutil.ReadFile(cfg.MarkdownFile)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to read %s", cfg.MarkdownFile)
@@ -215,7 +226,8 @@ func main() {
 	})
 
 	log.Infof("Starting server on %s", addr)
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	log.Debugf("Final configuration: %s", cfg)
+	if err := srv.ListenAndServe(); err != nil {
 		log.WithError(err).Fatalf("Failed to start server on %s", addr)
 	}
 }
