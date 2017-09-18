@@ -97,13 +97,23 @@ func guideLoginHandler(cfg *config.Config, log *logrus.Logger) http.HandlerFunc 
 					<title>Login</title>
 					<meta charset="utf-8">
 					<meta name="viewport" content="width=device-width, initial-scale=1">
+					<style>
+					input {
+						display: block;
+					}
+					.form__actions {
+						margin-top: 5px;
+					}
+					</style>
 				</head>
 				<body>
 					<form method="post">
 						<label>Token: 
-						<input type="password" name="token" />
+							<input type="password" name="token" />
 						</label>
-						<button type="submit">Authenticate</button>
+						<div class="form__actions">
+							<button type="submit">Authenticate</button>
+						</div>
 					</form>
 				</body>
 			</html>`)
