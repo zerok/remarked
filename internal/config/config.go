@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"gopkg.in/yaml.v2"
@@ -44,6 +45,10 @@ type Config struct {
 	// The FinalStylesheet is the URL of the stylesheet as it is being served
 	// by the HTTP server.
 	FinalStylesheet string `yaml:"-"`
+}
+
+func (c *Config) String() string {
+	return fmt.Sprintf("<Config Title={%v} Stylesheet={%v} MarkdownFile={%v} RemarkJS={%v} Token={%v} FinalStylesheet={%v}>", c.Title, c.Stylesheet, c.MarkdownFile, c.RemarkJS, c.Token, c.FinalStylesheet)
 }
 
 // LoadFromPath generates a new Config object from the YAML file available
