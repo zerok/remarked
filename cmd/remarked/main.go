@@ -82,6 +82,8 @@ const defaultMarkdownFile = "slides.md"
 const defaultConfigFile = "remarked.yml"
 const stylesheetMountPoint = "/style/_.css"
 
+var commit, date, version string
+
 type context struct {
 	Source        string
 	RemarkJS      string
@@ -105,6 +107,7 @@ func main() {
 	var staticFolder string
 	var tkn string
 	var initialize bool
+	var showVersion bool
 	pflag.StringVar(&configPath, "config", "remarked.yml", "Path to a configuration file")
 	pflag.StringVar(&title, "title", "", "Presentation title")
 	pflag.StringVar(&markdownFile, "markdown-file", "", "Path to a markdown file")
@@ -116,7 +119,13 @@ func main() {
 	pflag.BoolVar(&guide, "guide", false, "Allow guided mode")
 	pflag.StringVar(&tkn, "guide-token", "", "Token required for acting as guide")
 	pflag.BoolVar(&initialize, "init", false, "Initialize a remarked project in the current folder")
+	pflag.BoolVar(&showVersion, "version", false, "Show version information")
 	pflag.Parse()
+
+	if showVersion {
+		fmt.Printf("Version: %s\nCommit: %s\nDate: %s\n", version, commit, date)
+		os.Exit(0)
+	}
 
 	log := logrus.New()
 	if verbose {
