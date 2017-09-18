@@ -9,12 +9,25 @@ on top of the original framework:
 - A guide/guided mode for being able to remote-control a presentation through a
   websocket connection.
 
+## Installation
+
+You can either pick one of the [binaries from Github](https://github.com/zerok/remarked/releases)
+or, if you have Go 1.9+ installed, by using go-get:
+
+```
+$ go get github.com/zerok/remarked/cmd/remarked
+```
+
 
 ## Getting started
 
-Once you have remarked installed, you can create a sample project file using
+Once you have installed remarked, you can create a sample project file with
 `remarked --init`. See that file for descriptions on all the available
 settings.
+
+Then simply write your Markdown as you would in preparation for using it with
+RemarkJS and then start `remarked` to launch a small webserver with your
+presentation on.
 
 
 ## Remote 
