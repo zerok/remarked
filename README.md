@@ -60,8 +60,12 @@ If you set a local file as stylesheet, it will be served by the HTTP server as
 By default, remarked will look for a `remarked.yml` file within the current
 working directory with the following options:
 
-- `markdownFile`
-- `stylesheet`
-- `staticFolder` (default: `./static`)
+- `markdownFile`: This file contains your presentation content. See the
+  Remark.JS documentation for details on how this file has to be formatted.
+- `stylesheet`: If you need any custom styling, specify your CSS file here.
+- `title`: The title as it is rendered inside the browser's title bar.
+- `remarkJS`: If you prefer a modified version of Remark.JS, specify it here.
+- `staticFolder`: This folder will be made available under `/static` by the
+  built-in webserver.
 
-All of these can be overriden with commandline flags.
+All of these can be overriden with command-line flags.
