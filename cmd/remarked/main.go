@@ -261,15 +261,22 @@ func getFolderName(p string) (string, error) {
 
 func doInit(log *logrus.Logger) error {
 	cfgFileStat, err := os.Stat(defaultConfigFile)
-	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("Failed to check %s: %s", defaultConfigFile, err.Error())
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to check %s: %s", defaultConfigFile, err.Error())
+		}
+	} else {
+		if cfgFileStat.IsDir() {
+			return fmt.Errorf("%s exists but is a directory", defaultConfigFile)
+		}
 	}
-	if cfgFileStat.IsDir() {
-		return fmt.Errorf("%s exists but is a directory", defaultConfigFile)
+	cfgDir := filepath.Dir(defaultConfigFile)
+	if err := os.MkdirAll(cfgDir, 0700); err != nil {
+		return fmt.Errorf("%s could not be created: %s", cfgDir, err.Error())
 	}
 	log.Infof("Generating empty config file: %s", defaultConfigFile)
 	if err := ioutil.WriteFile(defaultConfigFile, []byte(config.Sample), 0644); err != nil {
-		return fmt.Errorf("Failed to create %s: %s", defaultConfigFile, err.Error())
+		return fmt.Errorf("failed to create %s: %s", defaultConfigFile, err.Error())
 	}
 	return nil
 }
