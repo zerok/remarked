@@ -67,5 +67,30 @@ working directory with the following options:
 - `remarkJS`: If you prefer a modified version of Remark.JS, specify it here.
 - `staticFolder`: This folder will be made available under `/static` by the
   built-in webserver.
+- `markdownAsTemplate`: If you set this to  `true` then the Markdown file
+  will be treated as a template file for Go's [html/template](https://golang.org/pkg/html/template/)
+  package.
+- `leftActionDelimiter`: Used within `html/template` (Default: `{{`)
+- `rightActionDelimiter`: Used within `html/template` (Default: `}}`)
 
 All of these can be overriden with command-line flags.
+
+
+## Markdown as a template
+
+If you set `markdownAsTemplate` to `true` inside the remarked.yml file, 
+remarked will try to parse the specified Markdown file using Go's
+[html/template](https://golang.org/pkg/html/template/) package. This allows
+you to do things like if branching or loops. For now, the following functions
+are provided:
+
+- `loadCode PATH`: Loads the content of the given PATH and renders includes it
+  into the content.
+
+- `markLines RANGES CONTENT`: Parses the given content and adds a `*` in front
+  of every line matching the given ranges. Ranges can be specified as a 
+  comma-separated list of either positive numbers or `START-STOP` ranges.
+
+  E.g.: `2-5,8` would highlight lines 2, 3, 4, 5, and 8.
+
+

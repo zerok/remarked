@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -193,6 +194,8 @@ func main() {
 	mux := http.NewServeMux()
 	srv.Handler = mux
 
+	funcs := templateFuncs{}
+
 	localStylesheet, ok := isLocalStylesheet(cfg.Stylesheet)
 	if ok {
 		mux.HandleFunc(stylesheetMountPoint, func(w http.ResponseWriter, r *http.Request) {
@@ -225,13 +228,37 @@ func main() {
 			return
 		}
 
-		tmpl.Execute(w, context{
-			Source:        string(data),
+		ctx := &context{
 			RemarkJS:      cfg.RemarkJS,
 			StyleSheetURL: cfg.FinalStylesheet,
 			Title:         cfg.Title,
 			IsGuided:      guide,
-		})
+		}
+
+		rawData := string(data)
+
+		if cfg.MarkdownAsTemplate {
+			var content bytes.Buffer
+			contentTmpl, err := template.New("content").
+				Funcs(funcs.FuncMap()).
+				Delims(cfg.LeftActionDelimiter, cfg.RightActionDelimiter).
+				Parse(rawData)
+			if err != nil {
+				log.WithError(err).Errorf("Invalid template")
+				http.Error(w, "Failed to parse file", http.StatusInternalServerError)
+				return
+			}
+			if err := contentTmpl.Execute(&content, ctx); err != nil {
+				log.WithError(err).Errorf("Failed to render template")
+				http.Error(w, "Failed to render template", http.StatusInternalServerError)
+				return
+			}
+			ctx.Source = content.String()
+		} else {
+			ctx.Source = rawData
+		}
+
+		tmpl.Execute(w, ctx)
 	})
 
 	log.Infof("Starting server on %s", addr)

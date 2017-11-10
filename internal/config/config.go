@@ -24,6 +24,13 @@ markdownFile: slides.md
 
 # The folder that should be served under /static. Default: none
 # staticFolder: ./static
+
+# If you want to use some of Go's template constructs inside the
+# markdown file, enable this:
+# markdownAsTemplate: false
+
+# leftActionDelimiter: "{{"
+# rightActionDelimiter: "}}"
 `
 
 // Config is usually the content of a remarked.yml file. Pretty much
@@ -45,6 +52,10 @@ type Config struct {
 	// The FinalStylesheet is the URL of the stylesheet as it is being served
 	// by the HTTP server.
 	FinalStylesheet string `yaml:"-"`
+
+	MarkdownAsTemplate   bool   `yaml:"markdownAsTemplate"`
+	LeftActionDelimiter  string `yaml:"leftActionDelimiter"`
+	RightActionDelimiter string `yaml:"rightActionDelimiter"`
 }
 
 func (c *Config) String() string {
@@ -58,6 +69,12 @@ func LoadFromPath(path string) (*Config, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
+	}
+	if c.LeftActionDelimiter == "" {
+		c.LeftActionDelimiter = "{{"
+	}
+	if c.RightActionDelimiter == "" {
+		c.RightActionDelimiter = "}}"
 	}
 	return &c, yaml.Unmarshal(data, &c)
 }
