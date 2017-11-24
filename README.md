@@ -93,4 +93,14 @@ are provided:
 
   E.g.: `2-5,8` would highlight lines 2, 3, 4, 5, and 8.
 
+- `counter START END STEP` is a helper for creating range-loops of a custom
+  size:
+
+  ```
+  {{ range (counter 0 2 1) }}
+    {{ .Counter }}
+  {{ end }}
+  ```
+
+  The output of this snippet is `0 1 2` as output.
 

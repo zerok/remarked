@@ -13,7 +13,31 @@ func (f *templateFuncs) FuncMap() template.FuncMap {
 	return template.FuncMap{
 		"loadCode":  f.LoadCode,
 		"markLines": f.MarkLines,
+		"counter":   f.Counter,
 	}
+}
+
+type count struct {
+	Current int
+	First   bool
+	Last    bool
+}
+
+func (f *templateFuncs) Counter(from int, to int, step int) ([]count, error) {
+	result := make([]count, 0, 0)
+	cur := from
+	for {
+		result = append(result, count{
+			Current: cur,
+			First:   step == from,
+			Last:    step == to,
+		})
+		if cur == to {
+			break
+		}
+		cur += step
+	}
+	return result, nil
 }
 
 func (f *templateFuncs) LoadCode(path string) (template.HTML, error) {
