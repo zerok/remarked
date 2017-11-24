@@ -217,7 +217,12 @@ func main() {
 	}
 
 	if cfg.StaticFolder != "" {
-		mux.Handle("/static", http.FileServer(http.Dir(cfg.StaticFolder)))
+		fullStaticFolder, err := filepath.Abs(cfg.StaticFolder)
+		if err != nil {
+			log.WithError(err).Fatalf("Failed to resolve absolute path to static folder %s", cfg.StaticFolder)
+		}
+		log.Debugf("Serving static files from %s", fullStaticFolder)
+		mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(fullStaticFolder))))
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
