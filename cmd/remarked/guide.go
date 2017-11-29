@@ -68,16 +68,25 @@ func guideHandler(cfg *config.Config, tmpl *template.Template, log *logrus.Logge
 			http.Error(w, "Failed to read file", http.StatusInternalServerError)
 			return
 		}
-
-		tmpl.Execute(w, context{
-			Source:        string(data),
+		funcs := templateFuncs{}
+		ctx := context{
 			RemarkJS:      cfg.RemarkJS,
 			StyleSheetURL: cfg.FinalStylesheet,
 			Title:         cfg.Title,
 			IsGuided:      true,
 			IsGuide:       true,
 			Token:         cfg.Token,
-		})
+		}
+
+		rawData := string(data)
+		content, err := buildContent(rawData, cfg, funcs.FuncMap())
+		if err != nil {
+			log.WithError(err).Error("Failed to compile content")
+			http.Error(w, "Failed to compile output", http.StatusInternalServerError)
+			return
+		}
+		ctx.Source = content
+		tmpl.Execute(w, ctx)
 	}
 }
 

@@ -241,28 +241,13 @@ func main() {
 		}
 
 		rawData := string(data)
-
-		if cfg.MarkdownAsTemplate {
-			var content bytes.Buffer
-			contentTmpl, err := template.New("content").
-				Funcs(funcs.FuncMap()).
-				Delims(cfg.LeftActionDelimiter, cfg.RightActionDelimiter).
-				Parse(rawData)
-			if err != nil {
-				log.WithError(err).Errorf("Invalid template")
-				http.Error(w, "Failed to parse file", http.StatusInternalServerError)
-				return
-			}
-			if err := contentTmpl.Execute(&content, ctx); err != nil {
-				log.WithError(err).Errorf("Failed to render template")
-				http.Error(w, "Failed to render template", http.StatusInternalServerError)
-				return
-			}
-			ctx.Source = content.String()
-		} else {
-			ctx.Source = rawData
+		content, err := buildContent(rawData, cfg, funcs.FuncMap())
+		if err != nil {
+			log.WithError(err).Error("Failed to compile content")
+			http.Error(w, "Failed to compile output", http.StatusInternalServerError)
+			return
 		}
-
+		ctx.Source = content
 		tmpl.Execute(w, ctx)
 	})
 
@@ -271,6 +256,24 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil {
 		log.WithError(err).Fatalf("Failed to start server on %s", addr)
 	}
+}
+
+func buildContent(rawContent string, cfg *config.Config, fmap template.FuncMap) (string, error) {
+	if cfg.MarkdownAsTemplate {
+		var content bytes.Buffer
+		contentTmpl, err := template.New("content").
+			Funcs(fmap).
+			Delims(cfg.LeftActionDelimiter, cfg.RightActionDelimiter).
+			Parse(rawContent)
+		if err != nil {
+			return "", fmt.Errorf("Failed to parse file: %s", err.Error())
+		}
+		if err := contentTmpl.Execute(&content, context{}); err != nil {
+			return "", fmt.Errorf("Failed to render template: %s", err.Error())
+		}
+		return content.String(), nil
+	}
+	return rawContent, nil
 }
 
 func isLocalStylesheet(u string) (string, bool) {
