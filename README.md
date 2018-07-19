@@ -62,6 +62,10 @@ working directory with the following options:
 
 - `markdownFile`: This file contains your presentation content. See the
   Remark.JS documentation for details on how this file has to be formatted.
+- `templateFile`: remarked generates a simple HTML output in which remarkJS is
+  included. The template that should be used for that HTML output can be
+  customized with this flag. You can find the default template on
+  [GitHub](https://github.com/zerok/remarked/blob/master/cmd/remarked/template.go).
 - `stylesheet`: If you need any custom styling, specify your CSS file here.
 - `title`: The title as it is rendered inside the browser's title bar.
 - `remarkJS`: If you prefer a modified version of Remark.JS, specify it here.

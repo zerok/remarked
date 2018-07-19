@@ -56,6 +56,8 @@ type Config struct {
 	MarkdownAsTemplate   bool   `yaml:"markdownAsTemplate"`
 	LeftActionDelimiter  string `yaml:"leftActionDelimiter"`
 	RightActionDelimiter string `yaml:"rightActionDelimiter"`
+
+	TemplateFile string `yaml:"templateFile"`
 }
 
 func (c *Config) String() string {

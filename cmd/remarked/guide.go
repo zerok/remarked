@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -60,8 +59,14 @@ func guideWebsocketHandler(cfg *config.Config, hub *commandchain.Hub, log *logru
 	}
 }
 
-func guideHandler(cfg *config.Config, tmpl *template.Template, log *logrus.Logger) http.HandlerFunc {
+func guideHandler(cfg *config.Config, log *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := loadOutputTemplate(cfg.TemplateFile)
+		if err != nil {
+			log.WithError(err).Errorf("Failed to parse template ")
+			http.Error(w, "Failed to parse template file", http.StatusInternalServerError)
+			return
+		}
 		data, err := ioutil.ReadFile(cfg.MarkdownFile)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to read %s", cfg.MarkdownFile)

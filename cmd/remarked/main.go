@@ -17,67 +17,6 @@ import (
 	"github.com/zerok/remarked/internal/token"
 )
 
-var outputTemplate = `<!DOCTYPE html>
-<html>
-  <head>
-	<title>{{ .Title }}</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta charset="utf-8">
-	{{ if .StyleSheetURL }}
-	<link rel="stylesheet" href="{{ .StyleSheetURL }}">
-	{{ end }}
-  </head>
-  <body>
-	<textarea id="source">{{.Source}}</textarea>
-    <script src="{{ .RemarkJS }}"></script>
-    <script>
-      var slideshow = remark.create({
-		highlightLines: true
-	  });
-	  {{ if or .IsGuided }}
-	  function connect() {
-	  var socket = new WebSocket((window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws/guide{{ if not .IsGuide }}d{{ end }}");
-	  window.addEventListener('close', function() {
-	    socket.close();
-	  });
-	  socket.onclose = function() {
-	    window.setTimeout(function() {connect();}, 2000);
-	  };
-		{{ if .IsGuide }}
-			socket.onopen = function() {
-				socket.send(JSON.stringify({
-				  type: 'auth',
-				  token: '{{.Token}}'
-				}));
-				socket.send(JSON.stringify({
-				  type: 'goto',
-				  slideIndex: slideshow.getCurrentSlideIndex()
-				}));
-			};
-			slideshow.on('showSlide', function(slide) {
-				socket.send(JSON.stringify({
-				type: 'goto',
-				slideIndex: slide.getSlideIndex()
-				}));
-			});
-		{{ else }}
-			socket.onmessage = function(evt) {
-				var cmd = JSON.parse(evt.data);
-				switch (cmd.type) {
-					case 'next': slideshow.gotoNextSlide(); break;
-					case 'prev': slideshow.gotoPreviousSlide(); break;
-					case 'goto': slideshow.gotoSlide(cmd.slideIndex + 1); break;
-				}
-			}
-		{{ end }}
-	  }
-	  connect();
-	  {{ end }}
-    </script>
-  </body>
-</html>
-`
-
 const defaultRemarkJS = "https://remarkjs.com/downloads/remark-latest.min.js"
 const defaultMarkdownFile = "slides.md"
 const defaultConfigFile = "remarked.yml"
@@ -98,6 +37,7 @@ type context struct {
 func main() {
 	var configPath string
 	var markdownFile string
+	var templateFile string
 	var addr string
 	var verbose bool
 	var remarkJS string
@@ -112,6 +52,7 @@ func main() {
 	pflag.StringVar(&configPath, "config", "remarked.yml", "Path to a configuration file")
 	pflag.StringVar(&title, "title", "", "Presentation title")
 	pflag.StringVar(&markdownFile, "markdown-file", "", "Path to a markdown file")
+	pflag.StringVar(&templateFile, "template-file", "", "Path to a template file to override the default HTML output")
 	pflag.StringVar(&remarkJS, "remarkjs", "", "URL or filepath of the remark.js file")
 	pflag.StringVar(&addr, "http-addr", "localhost:8000", "Start HTTP server on this address")
 	pflag.StringVar(&styleSheet, "stylesheet", "", "URL or filepath of a stylesheet")
@@ -146,6 +87,9 @@ func main() {
 	}
 	if markdownFile != "" {
 		cfg.MarkdownFile = markdownFile
+	}
+	if templateFile != "" {
+		cfg.TemplateFile = templateFile
 	}
 	if title != "" {
 		cfg.Title = title
@@ -206,12 +150,10 @@ func main() {
 		cfg.FinalStylesheet = cfg.Stylesheet
 	}
 
-	tmpl := template.Must(template.New("ROOT").Parse(outputTemplate))
-
 	if guide {
 		hub := commandchain.Hub{Log: log}
 		mux.HandleFunc("/guide/login", guideLoginHandler(cfg, log))
-		mux.HandleFunc("/guide", token.Require(cfg.Token, "/guide/login", guideHandler(cfg, tmpl, log)))
+		mux.HandleFunc("/guide", token.Require(cfg.Token, "/guide/login", guideHandler(cfg, log)))
 		mux.HandleFunc("/ws/guide", guideWebsocketHandler(cfg, &hub, log))
 		mux.HandleFunc("/ws/guided", guidedWebsocketHandler(cfg, &hub, log))
 	}
@@ -226,6 +168,12 @@ func main() {
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := loadOutputTemplate(cfg.TemplateFile)
+		if err != nil {
+			log.WithError(err).Errorf("Failed to parse template ")
+			http.Error(w, "Failed to parse template file", http.StatusInternalServerError)
+			return
+		}
 		data, err := ioutil.ReadFile(cfg.MarkdownFile)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to read %s", cfg.MarkdownFile)
