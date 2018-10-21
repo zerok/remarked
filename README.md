@@ -1,5 +1,7 @@
 # Remarked
 
+[![Build Status](https://dev.azure.com/hgutmann/remarked/_apis/build/status/zerok.remarked)](https://dev.azure.com/hgutmann/remarked/_build/latest?definitionId=2)
+
 Remarked is a simple wrapper around remark.js that makes creating new
 presentations and holding them a bit easier. It sports the following features
 on top of the original framework:
